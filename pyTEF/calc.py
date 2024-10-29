@@ -303,11 +303,17 @@ def sort_2dim(constructorTEF,
 # %% ../01_calc.ipynb 12
 def calc_bulk_values(coord,
                      Q,
+                     Qc=None,
                      Q_thresh=None,
                      index=None,
-                     **kwargs):
-    """Calculates the bulk values from a provided Q profile using the dividing salinity approach 
-    proposed by MacCready et al. (2018) and described/tested in detail by Lorenz et al. (2019)"""
+                     ):
+    """Calculate the bulk values from a provided Q profile.
+
+    This methods uses the dividing salinity approach proposed by MacCready
+    et al. (2018) and described/tested in detail by Lorenz et al. (2019).
+
+    If a tracer transport Qc is provided, also its bulk values are computed.
+    """
     coord_min=coord[0]
     delta_var=coord[1]-coord[0]
 
@@ -318,6 +324,9 @@ def calc_bulk_values(coord,
 
         Qin_ar = np.zeros((Q.shape[0],10)) #10 is the dummy length
         Qout_ar = np.zeros((Q.shape[0],10))
+        if Qc is not None:
+            Qc_in_ar = np.zeros((Q.shape[0], 10))
+            Qc_out_ar = np.zeros((Q.shape[0], 10))
         divval_ar = np.zeros((Q.shape[0],11)) #if there are 10 transports there would be 11 dividing salinities
         indices = np.zeros((Q.shape[0],11))
 
@@ -339,14 +348,23 @@ def calc_bulk_values(coord,
                 #calculate transports etc.
             Q_in_m=[]
             Q_out_m=[]
+            if Qc is not None:
+                Qc_in = []
+                Qc_out = []
             index_del=[]
             i=0
             for i in range(len(ind)-1):
                 Q_i=-(Q[t,ind[i+1]]-Q[t,ind[i]])
+                if Qc is not None:
+                    Qc_i = -(Qc[t, ind[i+1]] - Qc[t, ind[i]])
                 if Q_i<0:
                     Q_out_m.append(Q_i)
+                    if Qc is not None:
+                        Qc_out.append(Qc_i)
                 elif Q_i > 0:
                     Q_in_m.append(Q_i)
+                    if Qc is not None:
+                        Qc_in.append(Qc_i)
                 else:
                     index_del.append(i)
                 i+=1
@@ -358,6 +376,11 @@ def calc_bulk_values(coord,
                 Qin_ar[t,i] = qq
             for i,qq in enumerate(Q_out_m):
                 Qout_ar[t,i] = qq
+            if Qc is not None:
+                for i,qq in enumerate(Qc_in):
+                    Qc_in_ar[t,i] = qq
+                for i,qq in enumerate(Qc_out):
+                    Qc_out_ar[t,i] = qq
             for i,ss in enumerate(div_val):
                 divval_ar[t,i] = ss
             for i,ss in enumerate(ind):
@@ -378,6 +401,9 @@ def calc_bulk_values(coord,
             "o": (["o"],np.arange(divval_ar.shape[1])),
         },
         )
+        if Qc is not None:
+            out["Qc_in"] = (["time", "m"], Qc_in_ar)
+            out["Qc_out"] = (["time", "n"], Qc_out_ar)
 
     else:
         #no time axis
@@ -399,14 +425,23 @@ def calc_bulk_values(coord,
             #calculate transports etc.
         Q_in_m=[]
         Q_out_m=[]
+        if Qc is not None:
+            Qc_in = []
+            Qc_out = []
         index_del=[]
         i=0
         for i in tqdm(range(len(ind)-1)):
             Q_i=-(Q[ind[i+1]]-Q[ind[i]])
+            if Qc is not None:
+                Qc_i = -(Qc[ind[i+1]] - Qc[ind[i]])
             if Q_i<0:
                 Q_out_m.append(Q_i)
+                if Qc is not None:
+                    Qc_out.append(Qc_i)
             elif Q_i > 0:
                 Q_in_m.append(Q_i)
+                if Qc is not None:
+                    Qc_in.append(Qc_i)
             else:
                 index_del.append(i)
             i+=1
@@ -426,6 +461,9 @@ def calc_bulk_values(coord,
             "o": (["o"],np.arange(len(div_val))),
         }
         )
+        if Qc is not None:
+            out["Qc_in"] = (["m"], Qc_in)
+            out["Qc_out"] = (["n"], Qc_out)
     return(out)
 
 # %% ../01_calc.ipynb 15
